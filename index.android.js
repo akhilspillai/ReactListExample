@@ -14,6 +14,7 @@ import {
   BackAndroid
 } from 'react-native';
 
+import SplashScreen from './SplashScreen'
 import ListScreen from './ListScreen'
 import DetailScreen from './DetailScreen'
 
@@ -23,7 +24,7 @@ class ListExample extends Component {
   render() {
     return (
       <Navigator
-      initialRoute={{id: 'first'}}
+      initialRoute={{id: 'splash'}}
       renderScene={this.navigatorRenderScene}/>
     );
   }
@@ -31,8 +32,10 @@ class ListExample extends Component {
   navigatorRenderScene(route, navigator) {
     _navigator = navigator;
     switch (route.id) {
-      case 'first':
-      return (<ListScreen navigator={navigator} title="first"/>);
+      case 'splash':
+      return (<SplashScreen navigator={navigator}/>);
+      case 'albums':
+      return (<ListScreen navigator={navigator}/>);
       case 'second':
       return (<DetailScreen navigator={navigator} title= {route.title} />);
     }

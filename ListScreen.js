@@ -8,8 +8,19 @@ import {
   TouchableOpacity,
   ListView,
   ProgressBarAndroid,
-  ToolbarAndroid
+  ToolbarAndroid,
+  BackAndroid,
+  Alert,
+  AsyncStorage,
+  Image,
 } from 'react-native';
+
+const GLOBAL = require('./Global');
+const API_URL = GLOBAL.BASE_URL+GLOBAL.ALBUMS_URL;
+
+const crypto = require('crypto-js');
+const DeviceInfo = require('react-native-device-info');
+var authToken;
 
 class ListScreen extends React.Component{
 
@@ -30,61 +41,112 @@ class ListScreen extends React.Component{
   }
 
   getState() {
-    var getSectionData = (dataBlob, sectionID) => {
-      return dataBlob[sectionID];
-    }
-
-    var getRowData = (dataBlob, sectionID, rowID) => {
-      return dataBlob[sectionID + ':' + rowID];
-    }
-
     return {
       loaded : false,
+      error  : false,
       dataSource : new ListView.DataSource({
-        getSectionData          : getSectionData,
-        getRowData              : getRowData,
-        rowHasChanged           : (row1, row2) => row1 !== row2,
-        sectionHeaderHasChanged : (s1, s2) => s1 !== s2
+        rowHasChanged : (row1, row2) => row1 !== row2,
       })
     }
   }
 
   componentDidMount() {
-    this.fetchData();
+    AsyncStorage.getItem(GLOBAL.AUTH_TOKEN_KEY, (err, result) => {
+      if (err == null && result != null) {
+        this.authToken = result;
+        this.fetchData();
+      }
+    })
   }
 
   fetchData() {
+    var formBody = [];
+    var albumPerPage = 30;
+    var page = 1;
+    var sortDirection = 'DESC';
 
-    var dataBlob = {},
-    sectionIDs = [],
-    rowIDs = [],
-    i,
-    j;
+    formBody.push('album_per_page' + "=" + encodeURIComponent(albumPerPage));
+    formBody.push('page' + "=" + encodeURIComponent(page));
+    formBody.push('sort_dirction' + "=" + encodeURIComponent(sortDirection));
+    formBody = formBody.join("&");
 
-    for (i = 0; i < 4; i++) {
-      sectionIDs.push(i);
-      dataBlob[i] = 'Header'+i;
+    console.log("auth token "+this.authToken);
 
-      rowIDs[i] = [];
+    var ad = this.authToken;
+    ad = 'Basic '+this.getBase64String(ad+':'+ad);
 
-      for(j = 0; j < 3; j++) {
-        rowIDs[i].push(j);
-        dataBlob[i + ':' + j] = 'Item'+j;
+    var url = API_URL+'?'+formBody;
+
+    console.log(API_URL);
+    fetch(API_URL, {
+      method: 'GET',
+      headers: {
+        'Authorization': ad,
+        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       }
-    }
+    }).then((response) => response.json()).then((responseData) => {
+      console.log(responseData);
+      if (responseData.errors != null) {
+        var errorKey = Object.keys(responseData.errors)[0]
+        var error = responseData.errors[errorKey][0].message;
+        console.log('error '+error);
+        this.showError(error);
+      } else {
+        var accessToken = responseData.new_access_token,
+        rows = [],
+        i;
 
-    this.setState({
-      dataSource : this.state.dataSource.cloneWithRowsAndSections(dataBlob, sectionIDs, rowIDs),
-      loaded     : true
-    });
+        AsyncStorage.setItem(GLOBAL.AUTH_TOKEN_KEY, accessToken);
+
+        var albums = responseData.albums;
+        // for (var album in albums) {
+        //   rows.push({item :'Item '+i,
+        //   accessToken : accessToken});
+        // }
+
+        this.setState({
+          dataSource : this.state.dataSource.cloneWithRows(albums),
+          loaded     : true
+        });
+      }
+
+    }).done();
+  }
+
+  getBase64String(string) {
+    var base64 = require('base64-js')
+    var bytes = [];
+
+    for (var i = 0; i < string.length; ++i) {
+      bytes.push(string.charCodeAt(i));
+    }
+    return base64.fromByteArray(bytes);
+
+  }
+
+  getCouponCode(email) {
+    var couponCode = '!4surft/';
+    var md5 = crypto.MD5(couponCode+email).toString();
+    return crypto.MD5(couponCode+md5).toString();
   }
 
   render() {
     if (!this.state.loaded) {
       return this.renderLoadingView();
     }
-
     return this.renderListView();
+  }
+
+  showError(error) {
+    Alert.alert(
+      'Error',
+      error,
+      [
+        {text: 'Exit', onPress: () => {BackAndroid.exitApp()}},
+        {text: 'Retry', onPress: () => this.fetchData()},
+      ]
+    )
   }
 
   renderLoadingView() {
@@ -93,7 +155,7 @@ class ListScreen extends React.Component{
       <ToolbarAndroid style={styles.toolbar}
       title='User List'
       titleColor={'#FFFFFF'}/>
-      <View style={styles.container}>
+      <View style={styles.activityIndicator}>
       <ProgressBarAndroid
       animating={!this.state.loaded}
       style={[styles.activityIndicator, {height: 30}]}
@@ -114,16 +176,7 @@ class ListScreen extends React.Component{
       dataSource = {this.state.dataSource}
       style      = {styles.listview}
       renderRow  = {this.renderRow}
-      renderSectionHeader = {this.renderSectionHeader}
       />
-      </View>
-    );
-  }
-
-  renderSectionHeader(sectionData, sectionID) {
-    return (
-      <View style={styles.section}>
-      <Text style={styles.text}>{sectionData}</Text>
       </View>
     );
   }
@@ -131,31 +184,35 @@ class ListScreen extends React.Component{
 };
 
 Object.assign(ListScreen.prototype, {
-    bindableMethods : {
-        renderRow(rowData, sectionID, rowID) {
-            return (
-                <TouchableOpacity onPress={() => this.onPressRow(rowData, sectionID)}>
-                    <View style={styles.rowStyle}>
-                        <Text style={styles.rowText}>{rowData}</Text>
-                    </View>
-                </TouchableOpacity>
-            );
-        },
-        onPressRow(rowData, sectionID) {
-          this.props.navigator.push({
-            id: 'second',
-            title : rowData
-          })
-        }
-
+  bindableMethods : {
+    renderRow(rowData) {
+      return (
+        <TouchableOpacity onPress={() => this.onPressRow(rowData)}>
+        <View style={styles.rowStyle}>
+        <Image style={styles.albumArtStyle}
+        source = {{uri: rowData.thumnail_loc}}/>
+        <Text style={styles.rowText}>{rowData.album_name}</Text>
+        </View>
+        </TouchableOpacity>
+      );
+    },
+    onPressRow(rowData) {
+      this.props.navigator.push({
+        id: 'second',
+        title : rowData.album_name
+      })
     }
+
+  }
 });
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1
+    flex: 1,
+    backgroundColor: '#FFFFFF'
   },
   activityIndicator: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -176,7 +233,13 @@ const styles = StyleSheet.create({
     borderLeftColor: 'white',
     borderRightColor: 'white',
     borderBottomColor: '#E0E0E0',
-    borderWidth: 1
+    borderWidth: 1,
+    flexDirection: 'row',
+  },
+  albumArtStyle: {
+    width: 30,
+    height: 30,
+    resizeMode: Image.resizeMode.contain,
   },
   rowText: {
     color: '#212121',
