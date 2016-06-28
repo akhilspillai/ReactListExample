@@ -77,8 +77,8 @@ class ListScreen extends React.Component{
 
     var url = API_URL+'?'+formBody;
 
-    console.log(API_URL);
-    fetch(API_URL, {
+    console.log(url);
+    fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': ad,
@@ -100,10 +100,6 @@ class ListScreen extends React.Component{
         AsyncStorage.setItem(GLOBAL.AUTH_TOKEN_KEY, accessToken);
 
         var albums = responseData.albums;
-        // for (var album in albums) {
-        //   rows.push({item :'Item '+i,
-        //   accessToken : accessToken});
-        // }
 
         this.setState({
           dataSource : this.state.dataSource.cloneWithRows(albums),
@@ -151,33 +147,39 @@ class ListScreen extends React.Component{
 
   renderLoadingView() {
     return (
-      <View style={styles.container}>
-      <ToolbarAndroid style={styles.toolbar}
-      title='User List'
-      titleColor={'#FFFFFF'}/>
-      <View style={styles.activityIndicator}>
+    <Image style ={styles.bgImage}
+    resizeMode ={Image.resizeMode.stretch}
+    source = {require('image!bg_blue')}>
+      <ToolbarAndroid
+      style ={styles.toolbar}
+      title ='Albums'
+      titleColor ={'#FFFFFF'}/>
+      <View style ={styles.bgImage}>
       <ProgressBarAndroid
       animating={!this.state.loaded}
-      style={[styles.activityIndicator, {height: 30}]}
+      style={{height: 30}}
       size="small"
       />
       </View>
-      </View>
+      </Image>
     );
   }
 
   renderListView() {
     return (
-      <View style={styles.container}>
+    <Image style ={styles.bgImage}
+    resizeMode ={Image.resizeMode.stretch}
+    source = {require('image!bg_blue')}>
       <ToolbarAndroid style={styles.toolbar}
-      title='User List'
-      titleColor={'#FFFFFF'}/>
+      title ='Albums'
+      titleColor ={'#FFFFFF'}/>
       <ListView
+      contentContainerStyle = {styles.list}
       dataSource = {this.state.dataSource}
-      style      = {styles.listview}
       renderRow  = {this.renderRow}
+      pageSize = {12}
       />
-      </View>
+      </Image>
     );
   }
 
@@ -188,11 +190,8 @@ Object.assign(ListScreen.prototype, {
     renderRow(rowData) {
       return (
         <TouchableOpacity onPress={() => this.onPressRow(rowData)}>
-        <View style={styles.rowStyle}>
         <Image style={styles.albumArtStyle}
         source = {{uri: rowData.thumnail_loc}}/>
-        <Text style={styles.rowText}>{rowData.album_name}</Text>
-        </View>
         </TouchableOpacity>
       );
     },
@@ -209,57 +208,29 @@ Object.assign(ListScreen.prototype, {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF'
-  },
-  activityIndicator: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerText: {
-    fontWeight: 'bold',
-    fontSize: 20,
-    color: 'white'
-  },
-  text: {
-    color: 'white',
-    paddingHorizontal: 8,
-    fontSize: 16
-  },
-  rowStyle: {
-    paddingVertical: 20,
-    paddingLeft: 16,
-    borderTopColor: 'white',
-    borderLeftColor: 'white',
-    borderRightColor: 'white',
-    borderBottomColor: '#E0E0E0',
-    borderWidth: 1,
-    flexDirection: 'row',
   },
   albumArtStyle: {
-    width: 30,
-    height: 30,
     resizeMode: Image.resizeMode.contain,
-  },
-  rowText: {
-    color: '#212121',
-    fontSize: 16
-  },
-  subText: {
-    fontSize: 14,
-    color: '#757575'
-  },
-  section: {
-    flexDirection: 'column',
     justifyContent: 'center',
-    alignItems: 'flex-start',
-    padding: 6,
-    backgroundColor: '#2196F3'
+    padding: 5,
+    margin: 10,
+    width: 160,
+    height: 160,
   },
   toolbar: {
-    backgroundColor: '#3F51B5',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     height: 56,
     paddingLeft: 20,
+  },
+  bgImage: {
+    flex: 1,
+    width: null,
+    height: null,
+    justifyContent: 'center',
+  },
+  list: {
+    flexDirection: 'row',
+    flexWrap: 'wrap'
   },
 });
 

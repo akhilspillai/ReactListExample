@@ -43,7 +43,8 @@ class ListExample extends Component {
 }
 
 BackAndroid.addEventListener('hardwareBackPress', () => {
-  if (_navigator.getCurrentRoutes().length === 1  ) {
+  console.log('length is '+_navigator.getCurrentRoutes().length);
+  if (_navigator.getCurrentRoutes().length == 2  ) {
     return false;
   }
   _navigator.pop();

@@ -3,6 +3,7 @@
 import React, { Component } from 'react';
 import {
   StyleSheet,
+  View,
   Image,
   Animated,
   AsyncStorage,
@@ -24,7 +25,7 @@ class SplashScreen extends React.Component{
 
   componentDidMount() {
     AsyncStorage.getItem(GLOBAL.AUTH_TOKEN_KEY, (err, result) => {
-      if (err == null && result != null) {
+      if (err == null && result == null) {
         console.log('result is '+result);
         Animated.timing(
           this.state.splashTime,
@@ -40,7 +41,7 @@ class SplashScreen extends React.Component{
 
   render() {
     return (
-      <Image style={styles.container}
+      <Image style={styles.bgImage}
       source = {require('image!splash_bg')}/>
     );
   }
@@ -108,9 +109,11 @@ class SplashScreen extends React.Component{
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex:2,
-    resizeMode: Image.resizeMode.cover,
+  bgImage: {
+    flex: 1,
+    resizeMode: Image.resizeMode.stretch,
+    width: null,
+    height: null,
   },
 });
 
